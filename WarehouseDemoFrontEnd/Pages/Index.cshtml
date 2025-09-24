@@ -1,0 +1,78 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Coordinate Tracker";
+}
+
+<h2>Coordinates</h2>
+
+<table class="table" id="coordTable">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Updated At</th>
+        </tr>
+    </thead>
+    <tbody id="tbody">
+        <!-- rows will be injected by JavaScript -->
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+
+
+    <script>
+            const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7169/coordshub", {
+                withCredentials: true 
+            })
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("ReceiveCoordinateUpdate", function (dto) {
+            console.log("📡 Received update:", dto);
+        });
+
+        const coords = {};  // map of id => row data
+
+        function addOrUpdateRow(dto) {
+            const id = dto.id;
+            coords[id] = dto;
+            let row = document.getElementById("row-" + id);
+            if (!row) {
+                row = document.createElement("tr");
+                row.id = "row-" + id;
+                row.innerHTML = `
+                    <td>${dto.id}</td>
+                    <td>${dto.name}</td>
+                    <td>${dto.lat.toFixed(6)}</td>
+                    <td>${dto.lon.toFixed(6)}</td>
+                    <td>${new Date(dto.updatedAt).toLocaleString()}</td>
+                `;
+                document.getElementById("tbody").appendChild(row);
+            } else {
+                // update cells
+                const cells = row.children;
+                cells[2].innerText = dto.lat.toFixed(6);
+                cells[3].innerText = dto.lon.toFixed(6);
+                cells[4].innerText = new Date(dto.updatedAt).toLocaleString();
+            }
+        }
+
+        connection.on("ReceiveCoordinateUpdate", function (dto) {
+            addOrUpdateRow(dto);
+        });
+
+        connection.start().then(function () {
+            console.log("Connected to coordshub");
+            // Optionally request initial full list
+            connection.invoke("RequestAllCoordinates").catch(err => console.error(err));
+        }).catch(function (err) {
+            console.error(err.toString());
+        });
+    </script>
+}
