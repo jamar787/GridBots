@@ -23,9 +23,9 @@ namespace WarehouseDemoBackend.Models
 
         bool CollidesWithObject(IBoundingBox BoxB);
 
-        bool TryToMove();
+        bool TryToMove(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations);
 
-        void TakeStep();
+        void TakeStep(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations);
     }
 
     public class Bot : IBot
@@ -46,7 +46,15 @@ namespace WarehouseDemoBackend.Models
 
         public IBoundingBox BoundingBox { get; set; }
 
-        public Bot(int id, BotEnums.Direction startingDirection, string defaultColor, double stepSpeed, BotEnums.Status initialStatus, Vector2 topLeftStart, float xSideLen, float ySideLen)
+        public BotHelpers.IBrokenConditions BotBrokenConditions { get; set; }
+
+        public BotHelpers.IRandomHitCheck BrokenHitCheck { get; set; }
+
+        public BotHelpers.IRandomHitCheck DirectionChangeCheck { get; set; }
+
+        public BotHelpers.IRandomHitCheck IdleRollCheck { get; set; }
+
+        public Bot(int id, BotEnums.Direction startingDirection, string defaultColor, double stepSpeed, BotEnums.Status initialStatus, Vector2 topLeftStart, float xSideLen, float ySideLen, bool useBrokenCycles, int brokenCycleLimit, int breakTargetVal, int breakChance, int directionChangeTargetVal, int directionChangeChance, int idleRollTargetVal, int idleChangeLimit)
         {
             this.Id = id;
             this.CurrentDirection = startingDirection;
@@ -56,23 +64,50 @@ namespace WarehouseDemoBackend.Models
             this.BotStatus = new BotHelpers.BotStatus();
             this.BotStatus.SetStatus(initialStatus, "Initialized");
             this.BoundingBox = new BoundingBox(topLeftStart, new Vector2(topLeftStart.X + xSideLen, topLeftStart.Y+ySideLen));
+            this.BotBrokenConditions = new BotHelpers.BrokenConditions(useBrokenCycles, brokenCycleLimit);
+            this.BrokenHitCheck = new BotHelpers.RandomHitCheck(breakTargetVal, breakChance);
+            this.DirectionChangeCheck = new BotHelpers.RandomHitCheck(directionChangeTargetVal, directionChangeChance);
+            this.IdleRollCheck = new BotHelpers.RandomHitCheck(idleRollTargetVal, idleChangeLimit);
         }
 
         public bool CollidesWithObject(IBoundingBox BoxB)
         {
+            return BoundingBoxHelpers.GJKImplementation.DetectCollision(this.BoundingBox, BoxB);
+        }
+
+        public bool TryToMove(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations)
+        {
+            BoundingBox newPosition = new BoundingBox(this.BoundingBox.TopLeft, this.BoundingBox.BottomRight);
+            BotEnums.Direction testDirection = this.CurrentDirection;
+
+            if (this.DirectionChangeCheck.IsRandomHit())
+            {
+                //Get Random Direction
+            }
+
+
+
             return false;
         }
 
-        public bool TryToMove()
+        public void TakeStep(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations)
         {
-            return false;
+            BotBrokenConditions.UpdateBrokenCycles(this.BotStatus);
+            if (BotBrokenConditions.BrokenCycleReset) {
+                this.BotStatus.isBroken = false;
+                this.BotStatus.isMoving = false;
+                this.BotStatus.SetStatus(BotEnums.Status.OK, "Error Resolved");
+                this.BotBrokenConditions.BrokenCycleReset = false;
+            }
+
+            TryToMove(border, GridLocations, BotLocations);
+
+            if (BotBrokenConditions.BreakingChanceRoll(this.BrokenHitCheck))
+            {
+                this.BotStatus.SetStatus(BotEnums.Status.ERROR, "ERROR!");
+                this.CurrentDirection = BotEnums.Direction.Idle;
+                this.BotStatus.isMoving = false;
+            }
         }
-
-        public void TakeStep()
-        {
-
-        }
-
-
     }
 }

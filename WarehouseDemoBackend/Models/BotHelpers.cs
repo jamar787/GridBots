@@ -94,5 +94,67 @@ namespace WarehouseDemoBackend.Models
             }
 
         }
+
+        public interface IBrokenConditions
+        {
+            bool UseBrokenCycles { get; set; }
+            int NumBrokenCycles { get; set; }
+            int BrokenCycleLimit { get; set; }
+            bool BrokenCycleReset { get; set; }
+            
+            void UpdateBrokenCycles(IBotStatus status);
+            bool BreakingChanceRoll(IRandomHitCheck HitCheck);
+        }
+
+        public class BrokenConditions : IBrokenConditions
+        {
+            public bool UseBrokenCycles { get; set; }
+            public int NumBrokenCycles { get; set; }
+            public int BrokenCycleLimit { get; set; }
+            public bool BrokenCycleReset { get; set; }
+
+            public BrokenConditions(bool useBrokenCycles, int brokenCycleLimit)
+            {
+                UseBrokenCycles = useBrokenCycles;
+                BrokenCycleLimit = brokenCycleLimit;
+                BrokenCycleReset = false;
+                NumBrokenCycles = 0;
+            }
+
+            public void UpdateBrokenCycles(IBotStatus status)
+            {
+                if (this.UseBrokenCycles)
+                {
+                    if (status.isBroken)
+                    {
+                        if (this.NumBrokenCycles < this.BrokenCycleLimit)
+                        {
+                            this.NumBrokenCycles++;
+                            this.BrokenCycleReset = false;
+                            return;
+                        }
+                        else
+                        {
+                            this.NumBrokenCycles = 0;
+                            this.BrokenCycleReset = true;
+                            status.isBroken = false;
+                            return;
+                        }
+                    }
+                }
+            }
+            public bool BreakingChanceRoll(IRandomHitCheck HitCheck)
+            {
+                if (this.UseBrokenCycles)
+                {
+                    return HitCheck.IsRandomHit();
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
     }
 }
