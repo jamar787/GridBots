@@ -1,9 +1,18 @@
 ﻿using Microsoft.AspNetCore.Http.Features;
+using System;
+using static WarehouseDemoBackend.Models.BotEnums;
 
 namespace WarehouseDemoBackend.Models
 {
     public class BotHelpers
     {
+
+
+        public static BotEnums.Direction GetRandomDirection()
+        {
+                Array values = Enum.GetValues(typeof(Direction));
+                return (Direction)values.GetValue(Random.Shared.Next(values.Length));   
+        }
         public interface IBotStatus
         {
             BotEnums.Status Status { get; set; }
@@ -17,6 +26,8 @@ namespace WarehouseDemoBackend.Models
             string CurrentStatusColor { get; set; }
 
             void SetStatus(BotEnums.Status status, string message);
+
+            void UpdateStatus();
         }
 
         public class BotStatus : IBotStatus
@@ -65,6 +76,18 @@ namespace WarehouseDemoBackend.Models
                         break;
                 }
 
+            }
+
+            public void UpdateStatus()
+            {
+                if (this.isBroken)
+                    SetStatus(Status.ERROR, "ERROR");
+                else if (!this.isMoving)
+                    SetStatus(Status.STOPPED, "Stopped");
+                else if (this.Status == Status.MANUAL)
+                    SetStatus(Status.MANUAL, "Manual");
+                else
+                    SetStatus(Status.OK, "Ok");
             }
 
         }

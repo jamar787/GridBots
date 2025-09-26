@@ -5,7 +5,7 @@ namespace WarehouseDemoBackend.Models
 {
     public class BoundingBoxHelpers
     {
-        public BoundingBox StepBBFromDirection(BoundingBox BoxToMove, Direction direction, Vector2 currentSpeed)
+        public static BoundingBox StepBBFromDirection(BoundingBox BoxToMove, Direction direction, Vector2 currentSpeed)
         {
             Vector2 moveVector = new Vector2(0, 0);
 
@@ -28,7 +28,7 @@ namespace WarehouseDemoBackend.Models
             return BoxToMove;
         }
 
-        public BoundingBox UnStepBBFromDirection(BoundingBox BoxToMove, Direction direction, Vector2 currentSpeed)
+        public static BoundingBox UnStepBBFromDirection(BoundingBox BoxToMove, Direction direction, Vector2 currentSpeed)
         {
             Vector2 moveVector = new Vector2(0, 0);
 

@@ -1,5 +1,6 @@
 ﻿//using WarehouseDemoBackend.Models.BotEnums;
 
+using System;
 using System.Numerics;
 
 namespace WarehouseDemoBackend.Models
@@ -21,9 +22,15 @@ namespace WarehouseDemoBackend.Models
 
         public IBoundingBox BoundingBox { get; set; }
 
+        public Vector2 CurrentSpeed { get; set; }
+
+        public Vector2 MaxSpeed { get; set; }
+
+        void SetSpeed();
+
         bool CollidesWithObject(IBoundingBox BoxB);
 
-        bool TryToMove(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations);
+        void Move(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations);
 
         void TakeStep(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations);
     }
@@ -45,6 +52,9 @@ namespace WarehouseDemoBackend.Models
         public BotHelpers.IBotStatus BotStatus { get; set; }
 
         public IBoundingBox BoundingBox { get; set; }
+
+        public Vector2 CurrentSpeed { get; set; }
+        public Vector2 MaxSpeed { get; set; }
 
         public BotHelpers.IBrokenConditions BotBrokenConditions { get; set; }
 
@@ -68,26 +78,93 @@ namespace WarehouseDemoBackend.Models
             this.BrokenHitCheck = new BotHelpers.RandomHitCheck(breakTargetVal, breakChance);
             this.DirectionChangeCheck = new BotHelpers.RandomHitCheck(directionChangeTargetVal, directionChangeChance);
             this.IdleRollCheck = new BotHelpers.RandomHitCheck(idleRollTargetVal, idleChangeLimit);
+            SetSpeed();
         }
 
+        public void SetSpeed()
+        {
+            this.MaxSpeed = this.BoundingBox.GetSize();
+            this.CurrentSpeed = new Vector2((float)(this.MaxSpeed.X * this.StepSpeed), (float)(this.MaxSpeed.Y * this.StepSpeed));
+            
+        }
         public bool CollidesWithObject(IBoundingBox BoxB)
         {
             return BoundingBoxHelpers.GJKImplementation.DetectCollision(this.BoundingBox, BoxB);
         }
 
-        public bool TryToMove(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations)
+        public BotEnums.Direction IdleCheck(BotEnums.Direction testDirection)
+        {
+            if(testDirection == BotEnums.Direction.Idle && this.BotStatus.isBroken)
+            {
+                if (IdleRollCheck.IsRandomHit())
+                {
+                    while (testDirection == BotEnums.Direction.Idle) 
+                    { 
+                        testDirection = BotHelpers.GetRandomDirection();
+                    }
+                }
+            }
+
+            return testDirection;
+        }
+
+        public bool IsColliding(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations)
+        {
+            if (CollidesWithObject(border))
+            {
+                return true;
+            }
+            else
+            {
+                for (int i = 0; i < GridLocations.Count; i++) {
+                    if (CollidesWithObject(GridLocations[i]))
+                    {
+                        return true;
+                    }
+                }
+                for (int j = 0; j < GridLocations.Count; j++)
+                {
+                    if (CollidesWithObject(GridLocations[j]))
+                    {
+                        return true;
+                    }
+                }
+            }
+                return false;
+        }
+        public void Move(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations)
         {
             BoundingBox newPosition = new BoundingBox(this.BoundingBox.TopLeft, this.BoundingBox.BottomRight);
             BotEnums.Direction testDirection = this.CurrentDirection;
 
             if (this.DirectionChangeCheck.IsRandomHit())
             {
+                this.CurrentDirection = BotHelpers.GetRandomDirection();
                 //Get Random Direction
             }
 
+            testDirection = IdleCheck(testDirection);
 
+            newPosition = BoundingBoxHelpers.StepBBFromDirection(newPosition, testDirection, this.CurrentSpeed);
 
-            return false;
+            while(IsColliding(border, GridLocations, BotLocations))
+            {
+                newPosition = BoundingBoxHelpers.UnStepBBFromDirection(newPosition, testDirection, this.CurrentSpeed);
+                testDirection = BotHelpers.GetRandomDirection();
+                newPosition = BoundingBoxHelpers.StepBBFromDirection(newPosition, testDirection, this.CurrentSpeed);
+            }
+
+            this.CurrentDirection = testDirection;
+            if (this.CurrentDirection == BotEnums.Direction.Idle) {
+                this.BotStatus.isMoving = false;
+            }
+            else
+            {
+                this.BotStatus.isMoving = true;
+            }
+
+            this.BotStatus.UpdateStatus();
+            this.BoundingBox = new BoundingBox(newPosition.TopLeft, newPosition.BottomRight);
         }
 
         public void TakeStep(IBoundingBox border, List<IBoundingBox> GridLocations, List<IBoundingBox> BotLocations)
@@ -100,7 +177,7 @@ namespace WarehouseDemoBackend.Models
                 this.BotBrokenConditions.BrokenCycleReset = false;
             }
 
-            TryToMove(border, GridLocations, BotLocations);
+            Move(border, GridLocations, BotLocations);
 
             if (BotBrokenConditions.BreakingChanceRoll(this.BrokenHitCheck))
             {
