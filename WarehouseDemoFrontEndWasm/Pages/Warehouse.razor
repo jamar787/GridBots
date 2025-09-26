@@ -1,0 +1,47 @@
+﻿@page "/warehouse"
+@inject WarehouseDemoFrontEndWasm.Services.WarehouseClientService Client
+
+<h3>Warehouse</h3>
+
+<button @onclick="AddRandomBot">Add Bot</button>
+
+@if (_warehouse is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var bot in _warehouse.ActiveBots)
+        {
+            <li>Bot @bot.Id - Color: @bot.Color - Pos: (@bot.X, @bot.Y)</li>
+        }
+    </ul>
+}
+
+@code {
+    private WarehouseDto? _warehouse;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Client.OnWarehouseUpdated += warehouse =>
+        {
+            _warehouse = warehouse;
+            InvokeAsync(StateHasChanged);
+        };
+
+        await Client.StartHubAsync();
+        _warehouse = await Client.GetWarehouseAsync();
+    }
+
+    private async Task AddRandomBot()
+    {
+        var req = new AddBotRequest(
+            X: Random.Shared.Next(0, 100),
+            Y: Random.Shared.Next(0, 100),
+            DefaultColor: "#FF0000",
+            StartingStepSpeed: 1.0
+        );
+        await Client.AddBotAsync(req);
+    }
+}

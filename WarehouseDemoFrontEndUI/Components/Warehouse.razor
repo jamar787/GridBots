@@ -1,0 +1,49 @@
+﻿@page "/warehouse"
+@inject WarehouseDemoFrontEndUI.Services.WarehouseClientService WarehouseClient
+@inject HttpClient http;
+@inject IJSRuntime JS;
+@using WarehouseDemoBackend.Models;
+
+<h3>Warehouse Simulation</h3>
+
+<canvas @ref="canvasRef" width="1200" height="800" style="border:1px solid black"></canvas>
+<button @onclick="AddBot">Add Bot</button>
+
+@code{
+    private ElementReference canvasRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            WarehouseClient.OnWarehouseUpdated += UpdateCanvas;
+            await WarehouseClient.StartAsync();
+        }
+    }
+
+    private async void UpdateCanvas()
+    {
+        await JS.InvokeVoidAsync("drawWarehouse", canvasRef, WarehouseClient.Warehouse);
+    }
+
+    private async Task AddBot()
+    {
+        await http.PostAsJsonAsync("/warehouse/bot/add", new
+        {
+            X = 0f,
+            Y = 0f,
+            DefaultColor = "#ff0000",
+            StartingStepSpeed = 1.0,
+            Mode = BotEnums.OperationMode.Auto,
+            UseBrokenCycles = false,
+            BrokenCycleLimit = 0,
+            BrokenCycleTarget = 0,
+            BreakChance = 0,
+            DirectionChangeTargetVal = 1,
+            DirectionChangeChance = 10,
+            IdleRollTargetVal = 1,
+            IdleChangeLimit = 50
+        });
+    }
+
+}
