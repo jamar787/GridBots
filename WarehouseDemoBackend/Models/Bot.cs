@@ -64,7 +64,7 @@ namespace WarehouseDemoBackend.Models
 
         public BotHelpers.IRandomHitCheck IdleRollCheck { get; set; }
 
-        public Bot(int id, BotEnums.Direction startingDirection, string defaultColor, double stepSpeed, BotEnums.Status initialStatus, Vector2 topLeftStart, float xSideLen, float ySideLen, bool useBrokenCycles, int brokenCycleLimit, int breakTargetVal, int breakChance, int directionChangeTargetVal, int directionChangeChance, int idleRollTargetVal, int idleChangeLimit)
+        public Bot(int id, BotEnums.Direction startingDirection, string defaultColor, double stepSpeed, BotEnums.Status initialStatus, Vector2 topLeftStart, Vector2 BotDimensions, bool useBrokenCycles, int brokenCycleLimit, int breakTargetVal, int breakChance, int directionChangeTargetVal, int directionChangeChance, int idleRollTargetVal, int idleChangeLimit)
         {
             this.Id = id;
             this.CurrentDirection = startingDirection;
@@ -73,7 +73,7 @@ namespace WarehouseDemoBackend.Models
             this.StepSpeed = stepSpeed;
             this.BotStatus = new BotHelpers.BotStatus();
             this.BotStatus.SetStatus(initialStatus, "Initialized");
-            this.BoundingBox = new BoundingBox(topLeftStart, new Vector2(topLeftStart.X + xSideLen, topLeftStart.Y+ySideLen));
+            this.BoundingBox = new BoundingBox(topLeftStart, new Vector2(topLeftStart.X + BotDimensions.X, topLeftStart.Y+BotDimensions.Y));
             this.BotBrokenConditions = new BotHelpers.BrokenConditions(useBrokenCycles, brokenCycleLimit);
             this.BrokenHitCheck = new BotHelpers.RandomHitCheck(breakTargetVal, breakChance);
             this.DirectionChangeCheck = new BotHelpers.RandomHitCheck(directionChangeTargetVal, directionChangeChance);

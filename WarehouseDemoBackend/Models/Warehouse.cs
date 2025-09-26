@@ -100,7 +100,7 @@ namespace WarehouseDemoBackend.Models
             {
                 status = BotEnums.Status.MANUAL;
             }
-            ActiveBots.Add(new Bot(id, BotEnums.Direction.Idle, defaultColor, startingStepSpeed, status, TopLeftStartingPos, this.BotLength.X, this.BotLength.Y, useBrokenCycles, brokenCycleLimit, brokenCycleTarget, breakChance, directionChangeTargetVal, directionChangeChance, idleRollTargetVal, idleChangeLimit));
+            ActiveBots.Add(new Bot(id, BotEnums.Direction.Idle, defaultColor, startingStepSpeed, status, TopLeftStartingPos, this.BotLength, useBrokenCycles, brokenCycleLimit, brokenCycleTarget, breakChance, directionChangeTargetVal, directionChangeChance, idleRollTargetVal, idleChangeLimit));
         }
         public void RemoveBot(int id)
         {

@@ -4,6 +4,7 @@ using WarehouseDemoBackend.Data;
 using WarehouseDemoBackend.Hubs;
 using WarehouseDemoBackend.Services;
 using FastEndpoints.Swagger;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,7 +33,9 @@ builder.Services.AddCors(options =>
 });
 
 // Register custom services (DI)
-builder.Services.AddScoped<ICoordinateService, CoordinateService>();
+//builder.Services.AddScoped<ICoordinateService, CoordinateService>();
+builder.Services.AddSingleton<IWarehouseService, WarehouseService>();
+
 
 var app = builder.Build();
 
@@ -47,6 +50,10 @@ app.UseRouting();
 
 app.UseFastEndpoints();
 app.UseSwaggerGen();
-app.MapHub<CoordsHub>("/coordshub");
+app.MapHub<WarehouseHub>("/warehouseHub");
+
+var warehouseService = app.Services.GetRequiredService<IWarehouseService>();
+var hubContext = app.Services.GetRequiredService<IHubContext<WarehouseHub>>();
+warehouseService.StartSimulation(hubContext, intervalMs: 500);
 
 app.Run();

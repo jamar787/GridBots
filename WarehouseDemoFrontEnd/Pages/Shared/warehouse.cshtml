@@ -1,0 +1,54 @@
+﻿@page "/warehouse"
+@* @inject IHubContext<WarehouseHub> HubContext
+@inject IWarehouseService WarehouseService *@
+
+<h3>Warehouse Simulation</h3>
+
+<div id="warehouse">
+    @foreach (var bot in WarehouseService.Warehouse.ActiveBots)
+    {
+        <div class="bot"
+             style="position:absolute; left:@bot.TopLeft.Xpx; top:@bot.TopLeft.Ypx; width:@bot.Size.Xpx; height:@bot.Size.Ypx; background-color:@bot.Color; border-radius:50%;">
+        </div>
+    }
+</div>
+
+<button @onclick ="AddBot">Add Bot</button>
+<button @onclick ="RemoveBot">Remove Bot</button>
+<button @onclick ="StartSimulation">Start</button>
+<button @onclick ="StopSimulation">Stop</button>
+
+@code {
+    private HubConnection? _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/warehousehub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<WarehouseDemoBackend.Models.Warehouse>
+    ("WarehouseUpdated", warehouse =>
+    {
+    StateHasChanged(); // re-render when warehouse changes
+    });
+
+    await _hubConnection.StartAsync();
+    }
+
+    private void AddBot()
+    {
+    WarehouseService.AddBot(new System.Numerics.Vector2(0, 0), WarehouseService.Warehouse.RandomColor(), WarehouseService.Warehouse.DefaultBotSpeed);
+    }
+
+    private void RemoveBot()
+    {
+    WarehouseService.RemoveLastBot();
+    }
+
+    private void StartSimulation() => WarehouseService.StartSimulation();
+
+    private void StopSimulation() => WarehouseService.StopSimulation();
+    }
+
